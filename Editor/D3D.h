@@ -21,7 +21,7 @@ public:
 	uint Width() const;
 	uint Height() const;
 
-	void DrawATriangle(float width, float height);
+	void DrawAQuad(float x, float y, float width, float height);
 
 //////////////////////////////////////////////////////////////////////
 

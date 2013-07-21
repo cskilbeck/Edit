@@ -69,3 +69,45 @@ void TRACE(wstring const &format, ...)
 
 //////////////////////////////////////////////////////////////////////
 
+byte *LoadFile(TCHAR const *filename, size_t *size)
+{
+	byte *buf = null;
+	FILE *f = null;
+
+	if(_wfopen_s(&f, filename, TEXT("rb")) == 0)
+	{
+		fseek(f, 0, SEEK_END);
+		uint32 len = ftell(f);
+		fseek(f, 0, SEEK_SET);
+
+		buf = new byte[len + 2];
+
+		if(buf != null)
+		{
+			size_t s = fread_s(buf, len, 1, len, f);
+
+			if(s != len)
+			{
+				DeleteArray(buf);
+			}
+			else
+			{
+				*((WCHAR *)(((char *)buf) + len)) = L'\0';
+				if(size != null)
+				{
+					*size = len;
+				}
+			}
+		}
+
+		fclose(f);
+	}
+	else
+	{
+		MessageBox(null, Format(TEXT("File not found: %s"), filename).c_str(), TEXT("LoadFile"), MB_ICONERROR);
+	}
+	return buf;
+}
+
+//////////////////////////////////////////////////////////////////////
+

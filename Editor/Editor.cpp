@@ -25,7 +25,7 @@ HACCEL hAccelTable;
 //////////////////////////////////////////////////////////////////////
 
 D3D					d3d;
-Texture				texture;
+vector<Texture *>	textures;
 Font				font;
 
 //////////////////////////////////////////////////////////////////////
@@ -58,18 +58,54 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_EDITOR));
 
 	font.Create(TEXT("Consolas"), 10);
-	texture.Create(d3d.Width(), font.Height());
 
-	HDC dc = texture.GetDC();
-	if(dc != null)
+	uint lines = (d3d.Height() + font.Height() - 1) / font.Height();
+
+	size_t fileSize;
+	byte *file = LoadFile(TEXT("Editor.cpp"), &fileSize);
+	byte *ptr = file;
+	char *p = (char *)ptr;
+
+	for(uint i=0; i<lines; ++i)
 	{
-		HFONT oldFont = SelectFont(dc, font);
-		SetBkMode(dc, TRANSPARENT);
-		SetTextColor(dc, 0xffffff);
-		TextOut(dc, 0, 0, TEXT("RegisterWindowClass"), 19);
-		SelectFont(dc, oldFont);
-		texture.ReleaseDC();
+		Texture *t = new Texture();
+		t->Create(d3d.Width(), font.Height());
+		textures.push_back(t);
+
+		char *o = p;
+
+		while(*p && *p != '\r' && *p != '\n')
+		{
+			++p;
+		}
+
+		size_t len = p - o;
+
+		while(*p && (*p == '\n' || *p == '\r'))
+		{
+			++p;
+		}
+
+		if(len > 0)
+		{
+			HDC dc = t->GetDC();
+			if(dc != null)
+			{
+				HFONT oldFont = SelectFont(dc, font);
+				SetBkMode(dc, TRANSPARENT);
+				SetTextColor(dc, 0xffffff);
+				TextOutA(dc, 0, 0, o, len);
+				SelectFont(dc, oldFont);
+				t->ReleaseDC();
+			}
+		}
+
+		if(!*p)
+		{
+			break;
+		}
 	}
+
 
 	while(HandleMessages())
 	{
@@ -108,8 +144,13 @@ bool HandleMessages()
 void Render()
 {
 	d3d.Clear(0x00402000);
-	texture.Activate();
-	d3d.DrawATriangle((float)texture.Width(), (float)font.Height());
+	float y = 0;
+	for(auto t : textures)
+	{
+		t->Activate();
+		d3d.DrawAQuad(0, y, (float)t->Width(), (float)font.Height());
+		y += font.Height();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////

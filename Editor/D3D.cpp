@@ -84,37 +84,37 @@ void D3D::Open(HWND hwnd)
 
 //////////////////////////////////////////////////////////////////////
 
-void D3D::DrawATriangle(float width, float height)
+void D3D::DrawAQuad(float x, float y, float width, float height)
 {
 	Vertex v[6];
 
-	v[0].mX = 0;
-	v[0].mY = 0;
+	v[0].mX = x;
+	v[0].mY = y;
 	v[0].mU = 0.0f;
 	v[0].mV = 0.0f;
 	v[0].mColor = 0xffffffff;	// ABGR
-	v[1].mX = width;
-	v[1].mY = 0;
+	v[1].mX = x + width;
+	v[1].mY = y;
 	v[1].mU = 1.0f;
 	v[1].mV = 0.0f;
 	v[1].mColor = 0xffffffff;
-	v[2].mX = 0;
-	v[2].mY = height;
+	v[2].mX = x;
+	v[2].mY = y + height;
 	v[2].mU = 0.0f;
 	v[2].mV = 1.0f;
 	v[2].mColor = 0xffffffff;
-	v[3].mX = 0;
-	v[3].mY = height;
+	v[3].mX = x;
+	v[3].mY = y + height;
 	v[3].mU = 0.0f;
 	v[3].mV = 1.0f;
 	v[3].mColor = 0xffffffff;
-	v[4].mX = width;
-	v[4].mY = 0;
+	v[4].mX = x + width;
+	v[4].mY = y;
 	v[4].mU = 1.0f;
 	v[4].mV = 0.0f;
 	v[4].mColor = 0xffffffff;
-	v[5].mX = width;
-	v[5].mY = height;
+	v[5].mX = x + width;
+	v[5].mY = y + height;
 	v[5].mU = 1.0f;
 	v[5].mV = 1.0f;
 	v[5].mColor = 0xffffffff;
