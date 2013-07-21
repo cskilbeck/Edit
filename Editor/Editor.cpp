@@ -1,4 +1,11 @@
 //////////////////////////////////////////////////////////////////////
+// Create one texture per line
+// On resize resize all the textures
+// File load (whole thing for now)
+// Monitor keyboard
+// If up/down held for key repeat interval, go into vsynced loop
+// draw the textures into the backbuffer and flip
+// circular buffer of texture pointers, refresh the one going round the loop with the right line of text
 
 #include "stdafx.h"
 #include "D3D.h"
