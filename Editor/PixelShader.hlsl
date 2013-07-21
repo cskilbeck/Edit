@@ -1,0 +1,20 @@
+//////////////////////////////////////////////////////////////////////
+
+Texture2D txDiffuse : register(t0);
+SamplerState samLinear : register(s0);
+
+//////////////////////////////////////////////////////////////////////
+
+struct PS_Input
+{
+	float4 position: SV_POSITION;
+	float2 texcoord: TEXCOORD0;
+	float4 color: COLOR;
+};
+
+//////////////////////////////////////////////////////////////////////
+
+float4 main(PS_Input i) : SV_TARGET
+{
+	return (txDiffuse.Sample(samLinear, i.texcoord)) * i.color;
+}

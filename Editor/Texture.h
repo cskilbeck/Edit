@@ -1,0 +1,36 @@
+//////////////////////////////////////////////////////////////////////
+
+#pragma once
+
+//////////////////////////////////////////////////////////////////////
+
+class Texture
+{
+public:
+
+	Texture();
+	~Texture();
+
+	void Create(int width, int height);
+	void Destroy();
+	HDC GetDC();
+	void ReleaseDC();
+	void Activate();
+	uint Width() const;
+	uint Height() const;
+
+//////////////////////////////////////////////////////////////////////
+
+private:
+
+	ID3D11Texture2D *			mTexture;
+	IDXGISurface1 *				mSurface;
+	ID3D11ShaderResourceView *	mShaderResourceView;
+
+	uint						mWidth;
+	uint						mHeight;
+
+};
+
+//////////////////////////////////////////////////////////////////////
+
