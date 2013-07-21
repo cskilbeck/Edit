@@ -45,6 +45,8 @@ private:
 	ID3D11Buffer *				mMatrixBuffer;
 	ID3D11SamplerState *		mSamplerState;
 
+	ID3D11Debug *				mDebug;
+
 	ID3D11Buffer *				mVertexBuffer;
 	ID3D11RasterizerState *		mRasterizerState;
 

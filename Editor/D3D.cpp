@@ -11,6 +11,7 @@
 
 D3D::D3D()
 	: mDevice(null)
+	, mDebug(null)
 	, mDeviceContext(null)
 	, mSwapChain(null)
 	, mBackBuffer(null)
@@ -38,6 +39,13 @@ void D3D::Close()
 	Release(mBackBuffer);
 	Release(mSwapChain);
 	Release(mDeviceContext);
+
+	if(mDebug != null)
+	{
+		mDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+	}
+
+	Release(mDebug);
 	Release(mDevice);
 }
 
@@ -68,7 +76,7 @@ void D3D::Open(HWND hwnd)
     D3D11CreateDeviceAndSwapChain(null,
 									D3D_DRIVER_TYPE_HARDWARE,
 									null,
-									DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE | D3D11_CREATE_DEVICE_DEBUG,
+									D3D11_CREATE_DEVICE_DEBUG,
 									null,
 									0,
 									D3D11_SDK_VERSION,
@@ -77,6 +85,8 @@ void D3D::Open(HWND hwnd)
 									&mDevice,
 									null,
 									&mDeviceContext);
+
+	HRESULT hr = mDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&mDebug));
 
 	GetBackBuffer();
 	InitShaders();
@@ -158,7 +168,7 @@ void D3D::Resize(int width, int height)
 		mDeviceContext->RSSetViewports(1, &viewport);
 		Release(mBackBuffer);
 
-		mSwapChain->ResizeBuffers(1, width, height, kBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE);
+		mSwapChain->ResizeBuffers(1, width, height, kBackBufferFormat, 0);
 
 		GetBackBuffer();
 

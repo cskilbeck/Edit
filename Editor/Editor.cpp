@@ -237,8 +237,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_DESTROY:
-		d3d.Close();
-		PostQuitMessage(0);
+		{
+			for(auto t : textures)
+			{
+				t->Destroy();
+			}
+			textures.clear();
+			d3d.Close();
+			PostQuitMessage(0);
+		}
 		break;
 
 	default:
