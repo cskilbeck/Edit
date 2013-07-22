@@ -45,6 +45,7 @@ typedef __int32				int32;
 typedef __int64				int64;
 
 using std::wstring;
+using std::string;
 using std::vector;
 using DirectX::XMMATRIX;
 
@@ -54,3 +55,5 @@ using DirectX::XMMATRIX;
 #include "Vertex.h"
 #include "Texture.h"
 #include "Font.h"
+#include "Line.h"
+#include "Quad.h"

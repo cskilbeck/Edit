@@ -1,7 +1,4 @@
 //////////////////////////////////////////////////////////////////////
-// Create a texture
-// Use GDI to render some text into it
-// Draw a quad with it
 
 #include "stdafx.h"
 #include "resource.h"
@@ -23,12 +20,15 @@ D3D::D3D()
 	, mRasterizerState(null)
 	, mSamplerState(null)
 {
+	TRACE(TEXT("D3D()\n"));
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void D3D::Close()
 {
+	TRACE(TEXT("D3D::Close()\n"));
+
 	Release(mSamplerState);
 	Release(mRasterizerState);
 	Release(mVertexBuffer);
@@ -39,20 +39,20 @@ void D3D::Close()
 	Release(mBackBuffer);
 	Release(mSwapChain);
 	Release(mDeviceContext);
+	Release(mDevice);
 
 	if(mDebug != null)
 	{
-		mDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+		//mDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 	}
-
 	Release(mDebug);
-	Release(mDevice);
 }
 
 //////////////////////////////////////////////////////////////////////
 
 D3D::~D3D()
 {
+	TRACE(TEXT("~D3D()\n"));
 	Close();
 }
 
@@ -60,6 +60,8 @@ D3D::~D3D()
 
 void D3D::Open(HWND hwnd)
 {
+	TRACE(TEXT("D3D::Open()\n"));
+
 	DXGI_SWAP_CHAIN_DESC scd = { 0 };
 	scd.BufferCount = 1;
 	scd.BufferDesc.Format = kBackBufferFormat;
@@ -73,18 +75,8 @@ void D3D::Open(HWND hwnd)
 	mWidth = r.right;
 	mHeight = r.bottom;
 
-    D3D11CreateDeviceAndSwapChain(null,
-									D3D_DRIVER_TYPE_HARDWARE,
-									null,
-									D3D11_CREATE_DEVICE_DEBUG,
-									null,
-									0,
-									D3D11_SDK_VERSION,
-									&scd,
-									&mSwapChain,
-									&mDevice,
-									null,
-									&mDeviceContext);
+    D3D11CreateDeviceAndSwapChain(null, D3D_DRIVER_TYPE_HARDWARE, null, D3D11_CREATE_DEVICE_DEBUG,
+								null, 0, D3D11_SDK_VERSION, &scd, &mSwapChain, &mDevice, null, &mDeviceContext);
 
 	HRESULT hr = mDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&mDebug));
 
@@ -94,67 +86,20 @@ void D3D::Open(HWND hwnd)
 
 //////////////////////////////////////////////////////////////////////
 
-void D3D::DrawAQuad(float x, float y, float width, float height)
+void D3D::SetupRenderState()
 {
-	Vertex v[6];
-
-	v[0].mX = x;
-	v[0].mY = y;
-	v[0].mU = 0.0f;
-	v[0].mV = 0.0f;
-	v[0].mColor = 0xffffffff;	// ABGR
-	v[1].mX = x + width;
-	v[1].mY = y;
-	v[1].mU = 1.0f;
-	v[1].mV = 0.0f;
-	v[1].mColor = 0xffffffff;
-	v[2].mX = x;
-	v[2].mY = y + height;
-	v[2].mU = 0.0f;
-	v[2].mV = 1.0f;
-	v[2].mColor = 0xffffffff;
-	v[3].mX = x;
-	v[3].mY = y + height;
-	v[3].mU = 0.0f;
-	v[3].mV = 1.0f;
-	v[3].mColor = 0xffffffff;
-	v[4].mX = x + width;
-	v[4].mY = y;
-	v[4].mU = 1.0f;
-	v[4].mV = 0.0f;
-	v[4].mColor = 0xffffffff;
-	v[5].mX = x + width;
-	v[5].mY = y + height;
-	v[5].mU = 1.0f;
-	v[5].mV = 1.0f;
-	v[5].mColor = 0xffffffff;
-
-	D3D11_MAPPED_SUBRESOURCE resource;
-	mDeviceContext->Map(mVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);
-	memcpy(resource.pData, v, sizeof(v));
-	mDeviceContext->Unmap(mVertexBuffer, 0);
-
-	uint32 stride = sizeof(Vertex);
-	uint32 offset = 0;
-
 	mDeviceContext->RSSetState(mRasterizerState);
-
-	mDeviceContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-	mDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	mDeviceContext->VSSetConstantBuffers(0, 1, &mMatrixBuffer);
 	mDeviceContext->VSSetShader(mVertexShader, null, 0);
-
 	mDeviceContext->PSSetShader(mPixelShader, null, 0);
 	mDeviceContext->PSSetSamplers(0, 1, &mSamplerState);
-
-	mDeviceContext->Draw(6, 0);
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void D3D::Resize(int width, int height)
 {
+	TRACE(TEXT("D3D::Resize(%d,%d)\n"), width, height);
 	if(width > 0 && height > 0)
 	{
 		mWidth = width;
@@ -172,13 +117,10 @@ void D3D::Resize(int width, int height)
 
 		GetBackBuffer();
 
-		float halfWidth = 2.0f / width;
-		float halfHeight = -2.0f / height;
-
-		XMMATRIX perPixelMatrix = XMMatrixTranspose(XMMATRIX(halfWidth,	0.0f,		0.0f,	0.0f,
-															 0.0f,		halfHeight,	0.0f,	0.0f,
-															 0.0f,		0.0f,		1.0f,	0.0f,
-															 -1.0f,		1.0f,		0.0f,	1.0f));
+		XMMATRIX perPixelMatrix = XMMatrixTranspose(XMMATRIX( 2.0f/width,	 0.0f,		0.0f,		0.0f,
+															  0.0f,			-2.0f/height,0.0f,		0.0f,
+															  0.0f,			 0.0f,		1.0f,		0.0f,
+															 -1.0f,			 1.0f,		0.0f,		1.0f));
 
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		mDeviceContext->Map(mMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -224,6 +166,7 @@ void D3D::Present()
 
 void D3D::GetBackBuffer()
 {
+	TRACE(TEXT("D3D::GetBackBuffer()\n"));
     ID3D11Texture2D *pBackBuffer;
     mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
     mDevice->CreateRenderTargetView(pBackBuffer, null, &mBackBuffer);
@@ -235,6 +178,7 @@ void D3D::GetBackBuffer()
 
 void D3D::InitShaders()
 {
+	TRACE(TEXT("D3D::InitShaders()\n"));
 	ID3DBlob *VS_Buffer = null;
 	ID3DBlob *PS_Buffer = null;
 	HRESULT hr;
@@ -281,20 +225,7 @@ void D3D::InitShaders()
 	rasterizerDesc.CullMode = D3D11_CULL_NONE;
 	mDevice->CreateRasterizerState(&rasterizerDesc, &mRasterizerState);
 
-	D3D11_SAMPLER_DESC sampDesc;
-	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	sampDesc.MipLODBias = 0;
-	sampDesc.MaxAnisotropy = 1;
-	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	sampDesc.BorderColor[ 0 ] = 1.0f;
-	sampDesc.BorderColor[ 1 ] = 1.0f;
-	sampDesc.BorderColor[ 2 ] = 1.0f;
-	sampDesc.BorderColor[ 3 ] = 1.0f;
-	sampDesc.MinLOD = -3.402823466e+38F;
-	sampDesc.MaxLOD = 3.402823466e+38F;
+	CD3D11_SAMPLER_DESC sampDesc(D3D11_DEFAULT);
 	mDevice->CreateSamplerState(&sampDesc, &mSamplerState);
 
 	Release(PS_Buffer);

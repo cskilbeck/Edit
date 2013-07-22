@@ -30,7 +30,7 @@ wstring Format(WCHAR const *fmt, ...)
 	va_list v;
 	va_start(v, fmt);
 	WCHAR buffer[8192];
-	_vsnwprintf_s(buffer, ARRAYSIZE(buffer) - 1, fmt, v);
+	_vsnwprintf_s(buffer, _TRUNCATE, fmt, v);
 	return buffer;
 }
 
@@ -41,7 +41,29 @@ wstring Format(wstring const &str, ...)
 	va_list v;
 	va_start(v, str);
 	WCHAR buffer[8192];
-	_vsnwprintf_s(buffer, ARRAYSIZE(buffer) - 1, str.c_str(), v);
+	_vsnwprintf_s(buffer, _TRUNCATE, str.c_str(), v);
+	return buffer;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+string Format(char const *fmt, ...)
+{
+	va_list v;
+	va_start(v, fmt);
+	char buffer[8192];
+	_vsnprintf_s(buffer, _TRUNCATE, fmt, v);
+	return buffer;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+string Format(string const &str, ...)
+{
+	va_list v;
+	va_start(v, str);
+	char buffer[8192];
+	_vsnprintf_s(buffer, _TRUNCATE, str.c_str(), v);
 	return buffer;
 }
 

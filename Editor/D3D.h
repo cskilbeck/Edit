@@ -21,7 +21,17 @@ public:
 	uint Width() const;
 	uint Height() const;
 
-	void DrawAQuad(float x, float y, float width, float height);
+	ID3D11Device *GetDevice() const
+	{
+		return mDevice;
+	}
+
+	ID3D11DeviceContext *GetDeviceContext() const
+	{
+		return mDeviceContext;
+	}
+
+	void SetupRenderState();
 
 //////////////////////////////////////////////////////////////////////
 

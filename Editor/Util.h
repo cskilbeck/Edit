@@ -8,6 +8,8 @@ wstring GetCurrentFolder();
 wstring	GetExecutableFilename();
 wstring	Format(WCHAR const *fmt, ...);
 wstring	Format(wstring const &fmt, ...);
+string Format(char const *fmt, ...);
+string Format(string const &fmt, ...);
 void TRACE(WCHAR const *format, ...);
 void TRACE(wstring const &format, ...);
 byte *LoadFile(TCHAR const *filename, size_t *size);

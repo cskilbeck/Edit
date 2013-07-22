@@ -62,7 +62,18 @@ void Texture::Create(int width, int height)
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_GDI_COMPATIBLE;
-	d3d.mDevice->CreateTexture2D(&desc, null, &mTexture);
+
+	uint32 *pixels = new uint32[width * height];
+	for(int y = 0; y < width * height; ++y)
+	{
+		pixels[y] = 0xffffffff;
+	}
+	D3D11_SUBRESOURCE_DATA data[1];
+	data[0].pSysMem = (void *)pixels;
+	data[0].SysMemPitch = width * 4;
+	data[0].SysMemSlicePitch = 0;
+	d3d.mDevice->CreateTexture2D(&desc, data, &mTexture);
+	DeleteArray(pixels);
 	d3d.mDevice->CreateShaderResourceView(mTexture, null, &mShaderResourceView);
 	mTexture->QueryInterface(__uuidof(IDXGISurface1), (void **)(&mSurface));
 }

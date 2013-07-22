@@ -1,11 +1,4 @@
 //////////////////////////////////////////////////////////////////////
-// Create one texture per line
-// On resize resize all the textures
-// File load (whole thing for now)
-// Monitor keyboard
-// If up/down held for key repeat interval, go into vsynced loop
-// draw the textures into the backbuffer and flip
-// circular buffer of texture pointers, refresh the one going round the loop with the right line of text
 
 #include "stdafx.h"
 #include "D3D.h"
@@ -25,8 +18,16 @@ HACCEL hAccelTable;
 //////////////////////////////////////////////////////////////////////
 
 D3D					d3d;
+Quad				quad;
 vector<Texture *>	textures;
+vector<Line>		lines;
 Font				font;
+
+uint				topLine;
+uint				screenLines;
+uint				maxLine;
+bool				scroll = false;
+int					scrollDirection;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -37,6 +38,8 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 bool				HandleMessages();
 void				Render();
+void				ScrollDown();
+void				ScrollUp();
 
 //////////////////////////////////////////////////////////////////////
 
@@ -59,57 +62,59 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
 	font.Create(TEXT("Consolas"), 10);
 
-	uint lines = (d3d.Height() + font.Height() - 1) / font.Height();
+	screenLines = (d3d.Height() + font.Height() - 1) / font.Height();
+
+	TRACE(TEXT("%d\n"), screenLines);
+
+	quad.Create(d3d.GetDevice(), 0, 0, (float)d3d.Width(), (float)font.Height(), screenLines);
 
 	size_t fileSize;
 	byte *file = LoadFile(TEXT("Editor.cpp"), &fileSize);
 	byte *ptr = file;
-	char *p = (char *)ptr;
+	char const *p = (char *)ptr;
 
-	for(uint i=0; i<lines; ++i)
+	// scan the text file for the lines
+	lines.clear();
+	uint index = 0;
+	while(*p)
+	{
+		Line l;
+		p = l.Initialize(p, index++);
+		lines.push_back(l);
+	}
+
+	// create one texture per line of screen
+	for(uint i=0; i<screenLines; ++i)
 	{
 		Texture *t = new Texture();
 		t->Create(d3d.Width(), font.Height());
 		textures.push_back(t);
-
-		char *o = p;
-
-		while(*p != 0 && *p != '\n')
-		{
-			++p;
-		}
-
-		if(*p == '\n')
-		{
-			++p;
-		}
-
-		size_t len = p - o;
-
-		if(len > 0)
-		{
-			HDC dc = t->GetDC();
-			if(dc != null)
-			{
-				HFONT oldFont = SelectFont(dc, font);
-				SetBkMode(dc, TRANSPARENT);
-				SetTextColor(dc, 0xffffff);
-				int tabs[1] = { 28 };
-				TabbedTextOutA(dc, 0, 0, o, len, 1, tabs, 0);
-				SelectFont(dc, oldFont);
-				t->ReleaseDC();
-			}
-		}
-
-		if(!*p)
-		{
-			break;
-		}
 	}
 
+	topLine = 0;
+	maxLine = lines.size() - screenLines;
+
+	// set up the initial page of lines
+	for(uint i=0; i<min(screenLines, lines.size()); ++i)
+	{
+		lines[i + topLine].Render(*textures[(i + topLine) % screenLines], font, i + topLine);
+	}
+
+	Render();
 
 	while(HandleMessages())
 	{
+		if(scroll)
+		{
+			if(scrollDirection == -1)
+			{
+				ScrollUp();
+			}
+			else
+			{
+				ScrollDown();
+			}
+		}
 		Render();
 		d3d.Present();
 	}
@@ -123,7 +128,10 @@ bool HandleMessages()
 {
 	MSG msg;
 
-	WaitMessage();
+	if(!scroll)
+	{
+		WaitMessage();
+	}
 	while (PeekMessage(&msg, null, 0, 0, true))
 	{
 		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
@@ -138,20 +146,6 @@ bool HandleMessages()
 		}
 	}
 	return true;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void Render()
-{
-	d3d.Clear(0x00402000);
-	float y = 0;
-	for(auto t : textures)
-	{
-		t->Activate();
-		d3d.DrawAQuad(0, y, (float)t->Width(), (float)font.Height());
-		y += font.Height();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -200,6 +194,57 @@ bool CreateWindowInstance(HINSTANCE hInstance, int nCmdShow)
 
 //////////////////////////////////////////////////////////////////////
 
+void Render()
+{
+	d3d.Clear(0x00402000);
+	d3d.SetupRenderState();
+	quad.PrepareToDraw(d3d.GetDeviceContext());
+
+	for(uint i=0; i<screenLines; ++i)
+	{
+		textures[(i + topLine) % screenLines]->Activate();
+		quad.Draw(d3d.GetDeviceContext(), i);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void ScrollDown()
+{
+	if(topLine > 0)
+	{
+		scrollDirection = 1;
+		--topLine;
+		int tLine = (topLine + screenLines) % screenLines;
+		lines[topLine].Render(*textures[tLine], font, topLine);
+		Render();
+	}
+	else
+	{
+		scroll = false;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void ScrollUp()
+{
+	if(topLine < maxLine)
+	{
+		scrollDirection = -1;
+		int tLine = topLine % screenLines;
+		lines[topLine + screenLines].Render(*textures[tLine], font, topLine);
+		++topLine;
+		Render();
+	}
+	else
+	{
+		scroll = false;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
@@ -232,6 +277,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
+	case WM_KEYDOWN:
+		{
+			//TRACE(TEXT("%d\n"), lParam & 0x40000000);
+			if(lParam & 0x40000000)
+			{
+				scroll = true;
+			}
+			if(!scroll)
+			{
+				switch(wParam)
+				{
+				case VK_DOWN:
+					ScrollUp();
+					break;
+
+				case VK_UP:
+					ScrollDown();
+					break;
+				}
+			}
+		}
+		break;
+
+	case WM_KEYUP:
+		scroll = false;
+		break;
+
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		EndPaint(hWnd, &ps);
@@ -244,6 +316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				t->Destroy();
 			}
 			textures.clear();
+			quad.Destroy();
 			d3d.Close();
 			PostQuitMessage(0);
 		}
