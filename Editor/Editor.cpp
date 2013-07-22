@@ -74,17 +74,17 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
 		char *o = p;
 
-		while(*p && *p != '\r' && *p != '\n')
+		while(*p != 0 && *p != '\n')
+		{
+			++p;
+		}
+
+		if(*p == '\n')
 		{
 			++p;
 		}
 
 		size_t len = p - o;
-
-		while(*p && (*p == '\n' || *p == '\r'))
-		{
-			++p;
-		}
 
 		if(len > 0)
 		{
@@ -94,7 +94,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 				HFONT oldFont = SelectFont(dc, font);
 				SetBkMode(dc, TRANSPARENT);
 				SetTextColor(dc, 0xffffff);
-				TextOutA(dc, 0, 0, o, len);
+				int tabs[1] = { 28 };
+				TabbedTextOutA(dc, 0, 0, o, len, 1, tabs, 0);
 				SelectFont(dc, oldFont);
 				t->ReleaseDC();
 			}
