@@ -47,7 +47,7 @@ public:
 		return p;
 	}
 
-	void Render(Texture &t, HFONT font, int lineIndex)
+	void Render(Texture &t, int y, Font &font, int lineIndex)
 	{
 		HDC dc = t.GetDC();
 		if(dc != null)
@@ -59,12 +59,13 @@ public:
 			RECT rect;
 			rect.left = 0;
 			rect.right = t.Width();
-			rect.top = 0;
-			rect.bottom = t.Height();
+			rect.top = y;
+			rect.bottom = y + font.Height();
 			FillRect(dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
-			TabbedTextOutA(dc, 0, 0, GetLine(), Length(), 1, tabs, 0);
+			TabbedTextOutA(dc, 0, y, GetLine(), Length(), 1, tabs, 0);
 			SelectFont(dc, oldFont);
 			t.ReleaseDC();
+			GdiFlush();
 		}
 	}
 

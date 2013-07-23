@@ -19,7 +19,7 @@ HACCEL hAccelTable;
 
 D3D					d3d;
 Quad				quad;
-vector<Texture *>	textures;
+Texture				texture;
 vector<Line>		lines;
 Font				font;
 
@@ -66,7 +66,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
 	TRACE(TEXT("%d\n"), screenLines);
 
-	quad.Create(d3d.GetDevice(), 0, 0, (float)d3d.Width(), (float)font.Height(), screenLines);
+	quad.Create(d3d.GetDevice(), 2);
 
 	size_t fileSize;
 	byte *file = LoadFile(TEXT("Editor.cpp"), &fileSize);
@@ -83,21 +83,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 		lines.push_back(l);
 	}
 
-	// create one texture per line of screen
-	for(uint i=0; i<screenLines; ++i)
-	{
-		Texture *t = new Texture();
-		t->Create(d3d.Width(), font.Height());
-		textures.push_back(t);
-	}
+	texture.Create(d3d.Width(), d3d.Height());
 
 	topLine = 0;
 	maxLine = lines.size() - screenLines;
 
-	// set up the initial page of lines
+	// draw the initial page of lines into the texture
 	for(uint i=0; i<min(screenLines, lines.size()); ++i)
 	{
-		lines[i + topLine].Render(*textures[(i + topLine) % screenLines], font, i + topLine);
+		lines[i + topLine].Render(texture, ((i + topLine) % screenLines) * font.Height(), font, i + topLine);
 	}
 
 	Render();
@@ -116,7 +110,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 			}
 		}
 		Render();
-		d3d.Present();
 	}
 
 	return 0;
@@ -198,13 +191,34 @@ void Render()
 {
 	d3d.Clear(0x00402000);
 	d3d.SetupRenderState();
-	quad.PrepareToDraw(d3d.GetDeviceContext());
 
-	for(uint i=0; i<screenLines; ++i)
+	texture.Activate();
+
+	int numQuads = 1;
+
+	float vScale = 1.0f / screenLines;
+
+	// draw the top part
+	int tline = topLine % screenLines;
+	int height = screenLines - tline;
+	int remain = height % screenLines;
+
+	float u = 0;
+	float v = vScale * tline;
+
+	float h = (float)font.Height() * height;
+
+	//quad.Set(0, 0, 0, (float)d3d.Width(), (float)d3d.Height(), 0, 0, 1, 1, 0xffff00ff);
+	quad.Set(0, 0, 0, (float)d3d.Width(), h, 0, v, 1, 1, 0xffffffff);
+
+	if(remain > 0)
 	{
-		textures[(i + topLine) % screenLines]->Activate();
-		quad.Draw(d3d.GetDeviceContext(), i);
+		quad.Set(1, 0, h, (float)d3d.Width(), screenLines * font.Height() - h, 0, 0, 1, v, 0xff00ffff);
+		++numQuads;
 	}
+
+	quad.Draw(numQuads);
+	d3d.Present();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -216,8 +230,7 @@ void ScrollDown()
 		scrollDirection = 1;
 		--topLine;
 		int tLine = (topLine + screenLines) % screenLines;
-		lines[topLine].Render(*textures[tLine], font, topLine);
-		Render();
+		lines[topLine].Render(texture, tLine * font.Height(), font, topLine);
 	}
 	else
 	{
@@ -233,9 +246,8 @@ void ScrollUp()
 	{
 		scrollDirection = -1;
 		int tLine = topLine % screenLines;
-		lines[topLine + screenLines].Render(*textures[tLine], font, topLine);
+		lines[topLine + screenLines].Render(texture, tLine * font.Height(), font, topLine);
 		++topLine;
-		Render();
 	}
 	else
 	{
@@ -311,11 +323,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_DESTROY:
 		{
-			for(auto t : textures)
-			{
-				t->Destroy();
-			}
-			textures.clear();
+			texture.Destroy();
 			quad.Destroy();
 			d3d.Close();
 			PostQuitMessage(0);

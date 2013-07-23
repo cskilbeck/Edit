@@ -13,15 +13,20 @@ public:
 
 	void Create(WCHAR const *name, uint size);
 	void Destroy();
-	uint Height() const;
 
-	operator HFONT()
+	operator HFONT() const
 	{
 		return mFont;
 	}
 
+	uint Height() const
+	{
+		return mHeight;
+	}
+
 private:
 
-	HFONT mFont;
+	HFONT	mFont;
+	uint	mHeight;
 
 };

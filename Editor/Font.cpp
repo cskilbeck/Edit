@@ -6,6 +6,7 @@
 
 Font::Font()
 	: mFont(null)
+	, mHeight(0)
 {
 }
 
@@ -18,23 +19,6 @@ Font::~Font()
 		DeleteObject(mFont);
 		mFont = null;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////
-
-uint Font::Height() const
-{
-	uint height = 0;
-	if(mFont != null)
-	{
-		HDC screenDC = GetDC(null);
-		HFONT oldFont = SelectFont(screenDC, mFont);
-		TEXTMETRIC t;
-		GetTextMetrics(screenDC, &t);
-		SelectFont(screenDC, oldFont);
-		height = t.tmHeight + t.tmExternalLeading;
-	}
-	return height;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -54,6 +38,15 @@ void Font::Create(WCHAR const *name, uint size)
 	logFont.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
 	_tcscpy_s(logFont.lfFaceName, name);
 	mFont = CreateFontIndirect(&logFont);
+	if(mFont != null)
+	{
+		HDC screenDC = GetDC(null);
+		HFONT oldFont = SelectFont(screenDC, mFont);
+		TEXTMETRIC t;
+		GetTextMetrics(screenDC, &t);
+		SelectFont(screenDC, oldFont);
+		mHeight = t.tmHeight + t.tmExternalLeading;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////

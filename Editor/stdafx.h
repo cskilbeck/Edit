@@ -51,6 +51,7 @@ using DirectX::XMMATRIX;
 
 //////////////////////////////////////////////////////////////////////
 
+#include "D3D.h"
 #include "Util.h"
 #include "Vertex.h"
 #include "Texture.h"
